@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# FastAPI
+*.log
+
+# Video indirilen klasör
+indirilen_videolar/
+
+# IDE ve sistem dosyaları
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Poetry
+poetry.lock
+
+# Çeşitli
+.env
+*.tmp
+*.bak
