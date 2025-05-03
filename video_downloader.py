@@ -4,6 +4,7 @@ import re
 from pytube import YouTube  # Geriye dönük uyumluluk için tutuyoruz
 import yt_dlp
 import instaloader
+import platform
 
 def create_download_dir():
     """İndirilen videolar için klasör oluşturur."""
@@ -16,12 +17,25 @@ def download_youtube_video(url, download_path):
     try:
         print(f"YouTube videosu indiriliyor: {url}")
         
+        # Tarayıcı çerezlerini kullan
+        # Windows'ta Chrome'dan çerezleri alır
+        cookies_from_browser = None
+        system = platform.system()
+        
+        if system == "Windows":
+            cookies_from_browser = "chrome"
+        elif system == "Darwin":  # macOS
+            cookies_from_browser = "safari"
+        elif system == "Linux":
+            cookies_from_browser = "firefox"
+        
         ydl_opts = {
             'format': 'best',
             'outtmpl': os.path.join(download_path, '%(title)s.%(ext)s'),
             'noplaylist': True,  # Sadece video, oynatma listesi değil
             'quiet': False,  # İlerleme göstergesi görünür
             'no_warnings': False,
+            'cookiesfrombrowser': (cookies_from_browser, None, None, None)  # Tarayıcı çerezlerini kullan
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -34,11 +48,14 @@ def download_youtube_video(url, download_path):
         print("Alternatif indirme yöntemi deneniyor...")
         
         try:
-            # İlk metot başarısız olursa, farklı format seçenekleri deneyelim
+            # İlk metot başarısız olursa, farklı format ve opsiyonlar deneyelim
             ydl_opts = {
                 'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
                 'outtmpl': os.path.join(download_path, '%(title)s.%(ext)s'),
                 'noplaylist': True,
+                'cookiesfrombrowser': (cookies_from_browser, None, None, None),  # Tarayıcı çerezlerini kullan
+                'extractor_args': {'youtube': {'player_client': ['android']}},  # Android istemcisi olarak davran
+                'quiet': False
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -47,7 +64,18 @@ def download_youtube_video(url, download_path):
             return True
         except Exception as e2:
             print(f"Alternatif indirme yöntemi de başarısız oldu: {str(e2)}")
-            return False
+            
+            # Son çare olarak pytube kullanmayı deneyelim
+            try:
+                print("Son çare: pytube kullanılıyor...")
+                yt = YouTube(url)
+                video = yt.streams.get_highest_resolution()
+                video_path = video.download(download_path)
+                print(f"Video pytube ile başarıyla indirildi: {video_path}")
+                return True
+            except Exception as e3:
+                print(f"Tüm indirme yöntemleri başarısız oldu: {str(e3)}")
+                return False
 
 def download_twitter_video(url, download_path):
     """Twitter videolarını indirir."""
